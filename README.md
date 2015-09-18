@@ -26,6 +26,14 @@ Usage of sirbot:
     	Slack Incomming Webhook URL
 ```
 
+## Install
+
+```
+go get github.com/fujiwara/sirbot
+```
+
+## Usage example
+
 ```
 $ sirbot \
   -irc-host irc.example.com \
