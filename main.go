@@ -8,9 +8,12 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	irc "github.com/thoj/go-ircevent"
+	"gopkg.in/yaml.v2"
 )
 
 const Slackbot = "slackbot"
@@ -26,9 +29,13 @@ var (
 	IRCPort      int
 	IRCPassword  string
 	IRCSecure    bool
+	IconMap      IconMapFile
 )
 
 func main() {
+	var (
+		iconMapFilename string
+	)
 	flag.StringVar(&WebhookURL, "webhook-url", "", "Slack Incomming Webhook URL")
 	flag.StringVar(&WebhookToken, "webhook-token", "", "Slack Outgoing Webhook token")
 	flag.StringVar(&ListenAddr, "listen", ":7777", "HTTP listen address (for accept Outgoing Webhook)")
@@ -39,7 +46,16 @@ func main() {
 	flag.BoolVar(&IRCSecure, "irc-secure", false, "IRC use SSL")
 	flag.StringVar(&IRCChannel, "irc-channel", "", "IRC channel to join")
 	flag.StringVar(&SlackChannel, "slack-channel", "", "Slack channel to join")
+	flag.StringVar(&iconMapFilename, "icon-map", "", "icon map file(yaml)")
 	flag.Parse()
+
+	if iconMapFilename != "" {
+		var err error
+		IconMap, err = LoadIconMap(iconMapFilename)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 
 	ch := make(chan Message, 10)
 	go startHttpServer(ch)
@@ -63,6 +79,7 @@ func main() {
 	})
 
 	agent.AddCallback("PRIVMSG", func(e *irc.Event) {
+		nick := strings.ToLower(e.Nick)
 		msg := Message{
 			Channel: SlackChannel,
 			Text:    e.Message(),
@@ -72,6 +89,9 @@ func main() {
 				e.Arguments[0], // channel
 			),
 			LinkNames: 1,
+		}
+		if u := IconMap.Icons[nick]; u != "" {
+			msg.IconURL = u
 		}
 		err := slack.Post(msg)
 		if err != nil {
@@ -117,6 +137,7 @@ type Message struct {
 	Channel   string `json:"channel"`
 	Text      string `json:"text"`
 	IconEmoji string `json:"icon_emoji"`
+	IconURL   string `json:"icon_url"`
 	UserName  string `json:"username"`
 	LinkNames int    `json:"link_names"`
 }
@@ -124,6 +145,25 @@ type Message struct {
 type SlackAgent struct {
 	WebhookURL string
 	client     *http.Client
+}
+
+type IconMapFile struct {
+	Icons map[string]string `yaml:"icons"`
+}
+
+func LoadIconMap(file string) (IconMapFile, error) {
+	var im IconMapFile
+	log.Println("loading icon file", file)
+	f, err := os.Open(file)
+	if err != nil {
+		return im, err
+	}
+	content, err := ioutil.ReadAll(f)
+	if err != nil {
+		return im, err
+	}
+	err = yaml.Unmarshal(content, &im)
+	return im, nil
 }
 
 func (a *SlackAgent) Post(m Message) error {
