@@ -71,6 +71,7 @@ func main() {
 				e.Nick,
 				e.Arguments[0], // channel
 			),
+			LinkNames: 1,
 		}
 		err := slack.Post(msg)
 		if err != nil {
@@ -117,6 +118,7 @@ type Message struct {
 	Text      string `json:"text"`
 	IconEmoji string `json:"icon_emoji"`
 	UserName  string `json:"username"`
+	LinkNames int    `json:"link_names"`
 }
 
 type SlackAgent struct {
