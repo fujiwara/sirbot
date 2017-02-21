@@ -4,6 +4,8 @@ sirbot is "Slack IRC relay bot"
 
 ```
 Usage of sirbot:
+  -icon-map string
+    	icon map file(yaml)
   -irc-channel string
     	IRC channel to join
   -irc-host string
@@ -44,6 +46,14 @@ $ sirbot \
   -slack-channel "#sandbox" \
   -webhook-token xxxxxxxxxxxx \
   -webhook-url https://hooks.slack.com/services/xxxx/yyyy/zzzzzzzzz \
+```
+
+### ICON map file format
+
+```yaml
+icons:
+  irc_username: icon_url
+  fujiwara: http://www.gravatar.com/avatar/ca6281fff64797dc419b78f51f25c0a5
 ```
 
 ## Author
